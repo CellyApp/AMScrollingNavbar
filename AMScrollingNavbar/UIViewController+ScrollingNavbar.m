@@ -347,9 +347,9 @@
 
 - (void)updateSizingWithDelta:(CGFloat)delta
 {
+    [self updateNavbarAlpha:delta];
+
     if (self.resizesSuperview) {
-        [self updateNavbarAlpha:delta];
-        
         // At this point the navigation bar is already been placed in the right position, it'll be the reference point for the other views'sizing
         CGRect frameNav = self.navigationController.navigationBar.frame;
         
