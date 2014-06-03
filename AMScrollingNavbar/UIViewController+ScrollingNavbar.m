@@ -37,14 +37,22 @@
 - (void)setDelayDistance:(float)delayDistance { objc_setAssociatedObject(self, @selector(delayDistance), [NSNumber numberWithFloat:delayDistance], OBJC_ASSOCIATION_RETAIN); }
 - (float)delayDistance { return [objc_getAssociatedObject(self, @selector(delayDistance)) floatValue]; }
 
+- (void)setResizesSuperview:(BOOL)resizesSuperview { objc_setAssociatedObject(self, @selector(resizesSuperview), [NSNumber numberWithBool:resizesSuperview], OBJC_ASSOCIATION_RETAIN); }
+- (BOOL)resizesSuperview { return [objc_getAssociatedObject(self, @selector(resizesSuperview)) boolValue]; }
 
 - (void)followScrollView:(UIView*)scrollableView
 {
-	[self followScrollView:scrollableView withDelay:0];
+	[self followScrollView:scrollableView withDelay:0 resizesSuperview:YES];
 }
 
-- (void)followScrollView:(UIView*)scrollableView withDelay:(float)delay
+- (void)followScrollView:(UIView *)scrollableView withDelay:(float)delay
 {
+    [self followScrollView:scrollableView withDelay:delay resizesSuperview:YES];
+}
+
+- (void)followScrollView:(UIView*)scrollableView withDelay:(float)delay resizesSuperview:(BOOL)resizesSuperview
+{
+    self.resizesSuperview = resizesSuperview;
 	self.scrollableView = scrollableView;
 	
 	self.panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handlePan:)];
@@ -275,16 +283,18 @@
 
 - (void)restoreContentoffset:(float)delta
 {
-    // Hold the scroll steady until the navbar appears/disappears
-    CGPoint offset = [[self scrollView] contentOffset];
-    
-    if ([self scrollView].translatesAutoresizingMaskIntoConstraints) {
-        [[self scrollView] setContentOffset:(CGPoint){offset.x, offset.y - delta}];
-    } else {
-        if (delta > 0) {
-            [[self scrollView] setContentOffset:(CGPoint){offset.x, offset.y - delta - 1}];
+    if (self.resizesSuperview) {
+        // Hold the scroll steady until the navbar appears/disappears
+        CGPoint offset = [[self scrollView] contentOffset];
+        
+        if ([self scrollView].translatesAutoresizingMaskIntoConstraints) {
+            [[self scrollView] setContentOffset:(CGPoint){offset.x, offset.y - delta}];
         } else {
-            [[self scrollView] setContentOffset:(CGPoint){offset.x, offset.y - delta + 1}];
+            if (delta > 0) {
+                [[self scrollView] setContentOffset:(CGPoint){offset.x, offset.y - delta - 1}];
+            } else {
+                [[self scrollView] setContentOffset:(CGPoint){offset.x, offset.y - delta + 1}];
+            }
         }
     }
 }
@@ -337,24 +347,26 @@
 
 - (void)updateSizingWithDelta:(CGFloat)delta
 {
-	[self updateNavbarAlpha:delta];
-
-	// At this point the navigation bar is already been placed in the right position, it'll be the reference point for the other views'sizing
-	CGRect frameNav = self.navigationController.navigationBar.frame;
-	
-	// Move and expand (or shrink) the superview of the given scrollview
-	CGRect frame = self.scrollableView.superview.frame;
-    if (IOS7_OR_LATER) {
-        frame.origin.y = frameNav.origin.y + frameNav.size.height;
-    } else {
-        frame.origin.y = frameNav.origin.y - [self statusBar];
+    if (self.resizesSuperview) {
+        [self updateNavbarAlpha:delta];
+        
+        // At this point the navigation bar is already been placed in the right position, it'll be the reference point for the other views'sizing
+        CGRect frameNav = self.navigationController.navigationBar.frame;
+        
+        // Move and expand (or shrink) the superview of the given scrollview
+        CGRect frame = self.scrollableView.superview.frame;
+        if (IOS7_OR_LATER) {
+            frame.origin.y = frameNav.origin.y + frameNav.size.height;
+        } else {
+            frame.origin.y = frameNav.origin.y - [self statusBar];
+        }
+        if (IOS7_OR_LATER) {
+            frame.size.height = [UIScreen mainScreen].bounds.size.height - frame.origin.y;
+        } else {
+            frame.size.height = [UIScreen mainScreen].bounds.size.height - [self statusBar];
+        }
+        self.scrollableView.superview.frame = frame;
     }
-    if (IOS7_OR_LATER) {
-        frame.size.height = [UIScreen mainScreen].bounds.size.height - frame.origin.y;
-    } else {
-        frame.size.height = [UIScreen mainScreen].bounds.size.height - [self statusBar];
-    }
-	self.scrollableView.superview.frame = frame;
 }
 
 - (void)updateNavbarAlpha:(CGFloat)delta

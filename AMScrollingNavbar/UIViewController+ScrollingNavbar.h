@@ -14,6 +14,21 @@
  */
 
 /** Scrolling init method
+ Enables the scrolling on a generic UIView.
+ Also sets the value (in points) that needs to scroll through before the navbar
+ is moved back into scene. Additionally, allows for the scroll changes in the
+ scrollableView to not affect the scrollableView's superview, changes which 
+ would normally cause a view controller with a transparent nav bar to behave
+ strangely.
+ 
+ @param scrollableView   The UIView where the scrolling is performed.
+ @param delay            The delay of the downward scroll gesture.
+ @param resizesSuperview Whether or not scrolling should affect the 
+ scrollableView's superview. Set to NO if the toolbar is transparent.
+ */
+- (void)followScrollView:(UIView*)scrollableView withDelay:(float)delay resizesSuperview:(BOOL)resizesSuperview;
+
+/** Scrolling init method
  *
  * Enables the scrolling on a generic UIView.
  * Also sets the value (in points) that needs to scroll through beofre the navbar is moved back into scene
